@@ -1,0 +1,22 @@
+version: '3.5'
+services:
+  mysql:
+    image: mysql:8.0.32
+    restart: always
+    volumes:
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/database.sql
+    environment:
+      - MYSQL_DATABASE=webproject
+      - MYSQL_ROOT_PASSWORD=03102002
+  web:
+    build: .
+    depends_on:
+      - mysql
+    ports:
+      - '9999:80'
+    volumes:
+      - ./duy.vn:/var/www/html
+    stdin_open: true
+volumes:
+  db:
+    driver: local
