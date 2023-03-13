@@ -447,6 +447,8 @@ Nếu dán thẳng revere shell lên url như này thì chắc chắn sẽ bị 
 
 Lấy shell thành công
 
+## Priv
+
 Lên tty:
 
 ![image](https://user-images.githubusercontent.com/86275419/224736315-08ba479c-4aab-41e7-b7c3-b14e86195828.png)
@@ -614,6 +616,127 @@ Done!
 ![image](https://user-images.githubusercontent.com/86275419/224798157-0f67173c-3935-4f87-bdf2-baa94901a514.png)
 
 
+# 5. Prime
+
+![image](https://user-images.githubusercontent.com/86275419/224801515-296779fe-0cb4-4f55-88ce-df421e33e67d.png)
+
+Chưa kịp làm gì đã có hint tìm password.txt rồi :joy:
+
+## Scan
+
+![image](https://user-images.githubusercontent.com/86275419/224802421-9b157043-7c42-46f0-a4b6-24e8f540cc9f.png)
+
+IP: `192.168.44.118`
+
+![image](https://user-images.githubusercontent.com/86275419/224802545-0afaf090-0236-434d-8f95-0a2811846a99.png)
+
+Server mở 2 port: 22, 80
+
+## Web Exploit
+
+Mọi người chú ý khi làm con lab này, nếu không vào được web là nó đang sập đấy, cú v~l
+
+![image](https://user-images.githubusercontent.com/86275419/224803500-6d6829f0-26d3-4697-a677-3131074a555d.png)
+
+Trang chủ:
+
+![image](https://user-images.githubusercontent.com/86275419/224806026-5a09dd41-1af6-4382-a4f1-fffe3267879a.png)
+
+Fuzz subdir
+
+![image](https://user-images.githubusercontent.com/86275419/224806274-874d668d-7223-41be-bdf7-5800cfc55a00.png)
+
+Sau khi thử vào mấy cái subdir kia không thu được gì thì mình fuzz tiếp thôi
+
+![image](https://user-images.githubusercontent.com/86275419/224809550-6bf11e9b-7e1e-46aa-9fc9-843c0f227c5a.png)
+
+Fuzz được file đáng chú ý: secret.txt
+
+![image](https://user-images.githubusercontent.com/86275419/224809877-e89b6369-9e4c-4bf6-9ec4-60130b7ba11b.png)
+
+Ta nhận được gợi ý là sử dụng WFUZZ
+
+![image](https://user-images.githubusercontent.com/86275419/224810911-467f290e-fb54-4c34-a750-e845b58625b8.png)
+
+Giờ mình thử Fuzz theo mấy command ở trên xem sao 
+
+![image](https://user-images.githubusercontent.com/86275419/224813300-a01a926d-fbc7-4332-8b49-61c82e46a041.png)
+
+Khi fuzz như thế này thì cả những kết quả rác cũng trả về nên ta cần bổ sung thêm 1 option để lọc cho dễ, ở đây mình thấy những kết quả rác sẽ có độ dài 136 ký tự nên mình sẽ thêm `--hh 136` để ẩn những kết quả đó đi
+
+![image](https://user-images.githubusercontent.com/86275419/224813946-37a4dee5-b772-4083-b315-ec0e4cb04d7c.png)
+
+Ok vậy là ta biết rằng có một parameter `file`, giờ truy cập thử xem sao
+
+![image](https://user-images.githubusercontent.com/86275419/224814790-fa51f2f4-fe10-48d2-bccf-ed339642c903.png)
+
+Ta có gợi ý là sử dụng parameter `secrettier360` trên một số trang php khác. Lúc đầu dirsearch thì mình có quét được image.php
+
+![image](https://user-images.githubusercontent.com/86275419/224815469-1539f8ea-9753-4581-858e-eb5f3a1f8768.png)
+
+Mấy dạng bài như này thường có thể LFI nên ta sẽ thử xem sao
+
+![image](https://user-images.githubusercontent.com/86275419/224816447-7cc70736-5b1b-4961-a237-8a586d31ea70.png)
+
+Đúng là có thể LFI được, giờ việc của mình là tìm xem có gì hay ho không
+
+Để ý user saket: `saket:x:1001:1001:find password.txt file in my directory:/home/saket:`
+
+Đọc thử password.txt 
+
+![image](https://user-images.githubusercontent.com/86275419/224817185-3c653918-298f-4d47-93a5-521497e36cb4.png)
+
+Đã có password, giờ ta thử login vào wordpress 
+
+Lúc đọc /etc/passwd thì mình có thể liệt kê được 2 user là: saket và victor
+
+Đầu tiên mình thử `admin:follow_the_ippsec`  -> Fail
+
+Tiếp theo `saket:follow_the_ippsec` -> Fail
+
+Cuối cùng `victor:follow_the_ippsec` -> Success
+
+![image](https://user-images.githubusercontent.com/86275419/224818216-7a210d48-d061-40c8-846f-9aab4ff71885.png)
+
+Khi vào wordpress thì mình cứ ưu tiên vào `Theme Editor` xem có file nào đấm được không
+
+![image](https://user-images.githubusercontent.com/86275419/224820166-6a4e8a0f-6d16-46ee-ae44-970d88da608b.png)
+
+Truy cập vào file để thực thi file `/wordpress/wp-content/themes/twentynineteen/secret.php?cmd=reverse shell`
+
+![image](https://user-images.githubusercontent.com/86275419/224820971-688ee0bc-d982-4f53-becd-ab622babe8e3.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224821082-52716563-fe3f-49d4-9c57-eeae920311d7.png)
+
+Lấy shell thành công
+
+![image](https://user-images.githubusercontent.com/86275419/224824571-c921cb6d-cc1d-4014-b890-7e8cab37eebe.png)
+
+## Priv
+
+`sudo -l`
+
+![image](https://user-images.githubusercontent.com/86275419/224823794-767e1f92-1f1b-4af0-9f6d-03a6bcd57f12.png)
+
+Có thông tin trong `sudo -l` nhưng mình không có cách nào có thể khai thác file `enc` này
+
+Mình chạy thử linpeas trên máy này cũng không có manh mối gì, đến đây mình quyết định chạy `linux-exploit-suggester.sh` để khai thác lỗi về kernel (cách này mình được khuyến khích là không nên vì nguy hiểm)
+
+![image](https://user-images.githubusercontent.com/86275419/224826123-a6b6ae5c-b669-4df7-92a7-d06d4151c598.png)
+
+Tool gợi ý sử dụng PwnKit
+
+[PoC](https://github.com/berdav/CVE-2021-4034)
+
+Lúc nãy mình có lỡ nghịch con server nên giờ PoC này không chạy được nên mình sẽ tìm một CVE khác 
+
+`CVE-2017-16995`, mọi người tải về tại [đây](https://www.exploit-db.com/exploits/45010)
+
+![image](https://user-images.githubusercontent.com/86275419/224831878-1aed3775-8ecd-47b4-bbee-dc9dcd61f026.png)
+
+Done!
+
+![image](https://user-images.githubusercontent.com/86275419/224831927-f318cd5a-2cb8-422b-9781-4741cdb383f6.png)
 
 
 
