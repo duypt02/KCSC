@@ -259,6 +259,8 @@ Có [PoC](https://www.exploit-db.com/exploits/50477) giờ ta chỉ cần tải 
 
 Ok, exploit thành công, giờ ta lấy reverse shell về thôi 
 
+## Priv
+
 Tạo reverse shell nhanh chóng tại [đây](https://www.revshells.com/)
 
 Trên máy mình mở một port để lấy shell
@@ -354,6 +356,147 @@ Chạy PoC
 Bùm, lên root thành công
 
 ![image](https://user-images.githubusercontent.com/86275419/224709808-6331fedb-138e-4778-a562-add3ab65d209.png)
+
+# 3. DarkHole
+
+## Scan
+
+![image](https://user-images.githubusercontent.com/86275419/224719352-64abc1bd-f464-424d-92ac-56d65ffdbddd.png)
+
+IP: `192.168.44.118`
+
+![image](https://user-images.githubusercontent.com/86275419/224719569-037c779c-e1f4-427a-a51b-317e95647d5e.png)
+
+Server mở 2 port: 22 (SSH), 80 (HTTP)
+
+## Exploit web
+
+![image](https://user-images.githubusercontent.com/86275419/224719886-6762d7fc-bb38-4af8-984a-41958337ff9c.png)
+
+Fuzz subdir
+
+![image](https://user-images.githubusercontent.com/86275419/224720320-99a7b7d0-5f27-4b3c-b47a-3fe2cab94b48.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224720248-567fffbb-cc3c-4b0a-8645-fdc9ceb871fd.png)
+
+Vào `/config`:
+
+![image](https://user-images.githubusercontent.com/86275419/224720696-570c620f-a0e4-4bbe-b3bf-20832e119644.png)
+
+File `.php` nêu ta truy cập ở đây thì nó chỉ thực thi bên phía server mà không trả về source code cho mình đọc
+
+Sau khi truy cập các thư mục khác không được gì thì mình đã register và login thử
+
+![image](https://user-images.githubusercontent.com/86275419/224722654-96064c1e-014e-4476-8591-148ffe375444.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224722719-49369e0c-4eee-4d85-99af-347273407151.png)
+
+Ở đây có parameter id nên khả năng dính idor là rất cao
+
+![image](https://user-images.githubusercontent.com/86275419/224723182-0335a92a-40f9-4803-bb76-d2f1c129a12f.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224723276-bb921db6-84ac-4326-aa62-b2e8c6a9bd33.png)
+
+-> Tồn tại user có id = 1
+
+![image](https://user-images.githubusercontent.com/86275419/224723881-625f96e7-3635-4bd6-bd96-ee513f9fb335.png)
+
+Trang web có chức năng đổi pass nên mình sẽ thử xem có thể exploit được gì không
+
+![image](https://user-images.githubusercontent.com/86275419/224723899-47e81acd-8725-4d3f-82ca-df3c1f929148.png)
+
+Bắt request bằng Burp để xem nó gửi đi những gì
+
+![image](https://user-images.githubusercontent.com/86275419/224725382-0746f168-c27b-44b3-8721-ba8b6835d352.png)
+
+Request sẽ gửi đi password và id bằng post method, vậy thì giờ ta thử thay đổi id ở request xem có thu được gì không
+
+![image](https://user-images.githubusercontent.com/86275419/224725589-a42d9c49-dce2-4587-a0e8-bd856bc35757.png)
+
+Password đã update, giờ ta sẽ thử đoán username và thử login với password `12345` vừa đổi xem có được không
+
+![image](https://user-images.githubusercontent.com/86275419/224726143-4ad7e931-18fe-49cc-9fa5-0324eb3e1146.png)
+
+Username khá dễ đoán là `admin` và mình đã login được vào
+
+Ở trang của `admin` có thêm chức năng upload nên khả năng là ta sẽ có thể upload được file thực thi rồi vào `/upload` chạy. Lý thuyết là như vậy, còn được hay không thì ta thử xem thế nào :))
+
+Mình tạo nhanh một file php với nội dung như sau
+
+![image](https://user-images.githubusercontent.com/86275419/224729827-3daf15a1-861e-4bc1-b870-943c0c559fdc.png)
+
+Thực hiện upload thì thấy rằng bị filter extension.
+
+![image](https://user-images.githubusercontent.com/86275419/224730682-1be5ff4f-41b4-41bc-b691-04d25eff8e6a.png)
+
+Giờ ta sẽ tìm cách bypass
+
+Cứ làm theo [hacktricks](https://book.hacktricks.xyz/pentesting-web/file-upload) từ trên xuống dưới kiểu gì cũng được thôi, mong là thế :)))
+
+![image](https://user-images.githubusercontent.com/86275419/224734426-420f23e2-3a49-409b-aa49-641d8072e3b0.png)
+
+Đây rồi, thử đến `.phtml` thì file có thể thực thi. Giờ ta chỉ cần lấy reverse shell về thôi 
+
+![image](https://user-images.githubusercontent.com/86275419/224735286-8a5cd8e2-f05c-4afc-a63d-64a4f2df4434.png)
+
+Nếu dán thẳng revere shell lên url như này thì chắc chắn sẽ bị lỗi do dính một số ký tự đặc biệt nên mình sẽ encode trước khi đưa vào
+
+![image](https://user-images.githubusercontent.com/86275419/224735661-dd7b72b6-6296-4dc1-b883-23fb1483d077.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224735785-7ad12527-42b2-4255-95a9-1197b8bfd651.png)
+
+Lấy shell thành công
+
+Lên tty:
+
+![image](https://user-images.githubusercontent.com/86275419/224736315-08ba479c-4aab-41e7-b7c3-b14e86195828.png)
+
+Những cách thông thường khi vào server thực hiện không thành công thì mình sẽ không đưa vào đây nữa
+
+Khi mình exploit đến directory của user `john` thì mình phát hiện ra `.ssh` mình được phép ghi vào do group của thư mục đang là group của mình, nhưng đời không như là mơ, id_rsa không cho ghi vào, nên coi như chả làm được gì với cái này
+
+![image](https://user-images.githubusercontent.com/86275419/224742128-10dc7527-2a28-474e-937a-04fd9cdd6619.png)
+
+Ta chú ý vào file `toto` 
+ 
+Chạy thử ta thấy rằng nó sẽ thực hiện command id, mấy bài kiểu này thì ta chỉ cần thay đổi PATH để khi chạy command id thì nó sẽ tìm tới file thực thi ở thư mục đầu tiên trong biến PATH
+
+![image](https://user-images.githubusercontent.com/86275419/224744486-e0644bd2-316f-4152-b9fc-8734a7a23ee2.png)
+
+Chuyển sang user `john` thành công, đoạn này theo thói quen mình hay chạy `id` khi vào máy mà quên mất lúc nãy vừa sửa PATH 
+
+Giờ đổi lại PATH như cũ chạy là ok
+
+![image](https://user-images.githubusercontent.com/86275419/224745180-838f8a36-a2c8-4aa2-b468-7fa183d51776.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224745309-ddcd7ac4-8c19-4d8f-946f-7382b154274c.png)
+
+Xem file password là ta sẽ có password của john, sau đó ta sẽ thực hiện lại các bức hay làm khi vào server
+
+![image](https://user-images.githubusercontent.com/86275419/224745648-a1fea50f-df05-403b-b6f7-f209121f58ce.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224745812-9421cfce-f703-4b3e-be27-53a60218e019.png)
+
+Đây rồi, sửa file `file.py` rồi bem thôi
+
+![image](https://user-images.githubusercontent.com/86275419/224746520-a4800903-ff3a-4162-ad08-4f5f8c0ae18c.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224746671-07edede5-2644-4185-8394-cb463ee7254d.png)
+
+Done
+
+![image](https://user-images.githubusercontent.com/86275419/224746958-9e6dc21a-7ad6-4d36-b47e-cdf7d68e37d2.png)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
