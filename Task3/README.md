@@ -2,7 +2,7 @@
 
 ### Đầu tiên khi vào mỗi bài lab ta sẽ thực hiện Scan để thu thập thông tin
 
-Scan để lấy địa chỉ IP của máy ảo mà ta đang exploit:
+Scan để lấy địa chỉ IP của máy ảo mà ta đang exploit, ở đây mình dùng tool `arp-scan `:
 
 ![image](https://user-images.githubusercontent.com/86275419/224600679-1de6e122-b333-428a-9a84-0e4c113c194d.png)
 
@@ -12,11 +12,11 @@ Scan nmap để thu thập thông tin máy mục tiêu:
 
 ![image](https://user-images.githubusercontent.com/86275419/224601048-0b80b68a-5117-48f9-8686-246ca878f9bb.png)
 
-Server đang mở hai Port: 22 (SSH), 80 (HTTP)
+Server đang mở 2 Port (có thể nhiều hơn): 22 (SSH), 80 (HTTP)
 
 Ta sẽ tập trung exploit vào dịch vụ web để tìm cách RCE hoặc tìm thông tin để bem vào server 
 
-## Web 
+## Exploit Web 
 
 ![image](https://user-images.githubusercontent.com/86275419/224601486-b9a3f637-df13-4ad1-ac3e-8bdea1dcd777.png)
 
@@ -177,10 +177,159 @@ Ta có thể chạy lệnh bằng sudo nên sẽ dùng payload này
 
 Bùm, lên root thành công 
 
+# 2. Phineas
 
+## Scan
 
+Scan tìm IP:
 
+![image](https://user-images.githubusercontent.com/86275419/224674186-5e43440e-d2a9-432b-8326-b3eaafad6840.png)
 
+IP Server: `192.168.44.117`
 
+Scan thu thập thông tin Server:
 
+![image](https://user-images.githubusercontent.com/86275419/224675545-a0310cdc-34ca-4ac4-b450-690cb3576f7d.png)
+
+Kết quả Scan cho thấy server đang mở 4 port: 22 (SSH), 80 (HTTP), 111 (RPC), 3306 (mysql)
+
+Ta sẽ tập trung exploit vào port 80 (http) vì nó có khả năng dính lỗi nhiều nhất
+
+## Exploit Web
+
+![image](https://user-images.githubusercontent.com/86275419/224677353-bd177546-6f79-4468-973a-880be4a56633.png)
+
+Thực hiện Fuzz subdir:
+
+![image](https://user-images.githubusercontent.com/86275419/224678745-2e037a6d-79f4-4ec1-a0ac-d6915ba85c44.png)
+
+Dùng dirsearch thì mình quét được file đáng chú ý nhất là `cgi-bin` thường có thể dính `ShellShock`, tiếp tục quét subdir của cgi-bin
+
+![image](https://user-images.githubusercontent.com/86275419/224679638-73e48cb1-4f77-436b-8998-53fc6e17b200.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224679692-5772f097-d2ec-4409-a91f-41e191ea1b80.png)
+
+Quét 2 lần như trên mình không thu được gì nên mình sẽ Fuzz lại từ thư mục chính 
+
+![image](https://user-images.githubusercontent.com/86275419/224680141-c77185a3-e685-4182-a5a1-0f86673bae32.png)
+
+Lần này mình quét được subdir `structure`
+
+![image](https://user-images.githubusercontent.com/86275419/224680196-e0cbb41c-319f-4730-ae11-3b628aecf3da.png)
+
+Truy cập vào `structure`
+
+![image](https://user-images.githubusercontent.com/86275419/224680694-1e87ed4d-97dc-4c32-a86a-ef4010bded10.png)
+
+Trang web không có chức năng gì, view source code cũng không có manh mối gì nên mình sẽ thử Fuzz tiếp
+
+![image](https://user-images.githubusercontent.com/86275419/224682504-770e2e4e-ef59-40a9-8088-d622153417ad.png)
+
+Kết quả
+
+![image](https://user-images.githubusercontent.com/86275419/224682666-4f60d270-a5af-4623-828e-25e79500e62f.png)
+
+Trong đống này thì chỉ có robots.txt là có giá trị
+
+![image](https://user-images.githubusercontent.com/86275419/224684648-a25d0469-9465-4b86-b19f-3e0ac31ea35e.png)
+
+Truy cập `fuel`
+
+![image](https://user-images.githubusercontent.com/86275419/224684751-ec6f9460-324b-42dd-b2ba-f8199367a342.png)
+
+hmm, not found
+
+Ta sẽ thêm index.php vào trước fuel
+
+![image](https://user-images.githubusercontent.com/86275419/224686205-e452eacc-5076-45ac-9bd0-ba4b28ec0b66.png)
+
+Ta vào được trang login của một CMS. Trong số những lab mình đã làm mà gặp mấy cái CMS như này thì 100% dính CVE
+
+Ta sẽ đi tìm phiên bản của CMS rồi lên mạng search PoC exploit thôi 
+
+![image](https://user-images.githubusercontent.com/86275419/224687646-88d8b91a-086f-418c-b1b4-484e9fc3a8b7.png)
+
+FUEL 1.4
+
+Có [PoC](https://www.exploit-db.com/exploits/50477) giờ ta chỉ cần tải về chạy lấy shell thôi
+
+![image](https://user-images.githubusercontent.com/86275419/224690040-75a94ca1-03df-4059-9105-1fab5ce26d1d.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224690861-123c626c-534a-4af2-afe0-03efee9104f1.png)
+
+Ok, exploit thành công, giờ ta lấy reverse shell về thôi 
+
+Tạo reverse shell nhanh chóng tại [đây](https://www.revshells.com/)
+
+Trên máy mình mở một port để lấy shell
+
+![image](https://user-images.githubusercontent.com/86275419/224693848-7932f5dd-d3f0-4ec0-874a-467cf8ff42d9.png)
+
+Trên shell của PoC ta chạy revere shell đã tạo bên trên
+
+![image](https://user-images.githubusercontent.com/86275419/224692164-00dc00af-3027-40f5-82f7-6ae42fb23b54.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224693810-38289c4b-8174-40a9-9674-c1407d670f3e.png)
+
+Lấy reverse shell về thành công
+
+Shell khi lấy về chưa tty nên mình sẽ lên tty trước
+
+![image](https://user-images.githubusercontent.com/86275419/224694069-d06ce41c-714f-47d4-a586-4b2409506590.png)
+
+Vậy là không lên tty được, đồng nghĩa với việc mình không sudo được -> không `sudo -l`
+
+Nêu không sudo được thì mình sẽ đi tìm manh mối trong server
+
+Đầu tiên xem có file nào trong crontab có thể nghịch vào không 
+
+![image](https://user-images.githubusercontent.com/86275419/224694952-d461b747-b067-4f1f-9a70-67e9b5232f87.png)
+
+Rồi xong, không cho đọc luôn
+
+Tiếp theo mình sẽ vào source code của web để xem có thông tin gì có thể sử dụng không
+
+Sau một hồi đọc một đống file thì mình tìm được một dữ liệu đáng chú ý
+
+![image](https://user-images.githubusercontent.com/86275419/224696046-189b3e3d-42b6-4568-b45f-d8d05da4c066.png)
+
+Với thông tin này thì mình có thể log vào mysql, hoặc có thể là hint để ssh vào user `anna`
+
+Mình đã thử log mysql nhưng không được, vậy thì chỉ có thể là trường hợp còn lại
+
+![image](https://user-images.githubusercontent.com/86275419/224696898-2e4686a9-42c6-45dd-a23f-7c9bc9a66c72.png)
+
+Đúng luôn, ta đã ssh được vào user `anna`
+
+![image](https://user-images.githubusercontent.com/86275419/224697348-06fe3368-47c4-4b29-b3b6-6a3ed9d359ed.png)
+
+Bây giờ ta cần exploit để lên quyên cao hơn
+
+Trước hết cứ `sudo -l`
+
+![image](https://user-images.githubusercontent.com/86275419/224697630-344b7ebb-948b-4664-95a0-08ff61d4c9d9.png)
+
+-> Không sử dụng được cách này
+
+Sau một hồi thử các cách hay làm thì mình không thu được gì nên mình sẽ chạy `linpeas` để tìm thêm manh mối 
+
+![image](https://user-images.githubusercontent.com/86275419/224700866-02e63e3b-7842-4a71-a020-33d2b6310e99.png)
+
+Sau khi chạy xong mình mới phát hiện ra đã bỏ qua directory `web` trong thư mục chính của user anna
+
+Thử vào xem có gì có thể khai thác không
+
+![image](https://user-images.githubusercontent.com/86275419/224701522-7765dbb5-9f9a-4163-b1da-231575ee377b.png)
+
+file app.py
+
+![image](https://user-images.githubusercontent.com/86275419/224702363-dca8a56f-68d7-40a3-801d-4bbbbece631d.png)
+
+Sau khi đọc source thì mình hiểu nôm na là ứng dụng sẽ gửi dữ liệu mình truyền vào bằng `post` method tới `/heaven` để xử lý nhưng mình không biết chức năng của `pickle` là gì nên đã lên mạng xem thử và biết được rằng đây là module serialization trong python. Mà serialization thì có khả năng đựa vào đây để khai thác là rất cao 
+
+Và mình tìm được bài viết [này](https://github.com/CalfCrusher/Python-Pickle-RCE-Exploit). Giờ mình sẽ làm theo thử xem có được không
+
+Process chạy chương trình dưới quyền root, nên ta chỉ cần chạy được revese shell là sẽ có shell của root
+
+![image](https://user-images.githubusercontent.com/86275419/224705865-e6797dcd-891a-45f7-b676-d75503355b92.png)
 
