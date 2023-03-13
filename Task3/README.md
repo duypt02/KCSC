@@ -327,9 +327,34 @@ file app.py
 
 Sau khi đọc source thì mình hiểu nôm na là ứng dụng sẽ gửi dữ liệu mình truyền vào bằng `post` method tới `/heaven` để xử lý nhưng mình không biết chức năng của `pickle` là gì nên đã lên mạng xem thử và biết được rằng đây là module serialization trong python. Mà serialization thì có khả năng đựa vào đây để khai thác là rất cao 
 
-Và mình tìm được bài viết [này](https://github.com/CalfCrusher/Python-Pickle-RCE-Exploit). Giờ mình sẽ làm theo thử xem có được không
+Và mình tìm được bài viết [này](https://github.com/CalfCrusher/Python-Pickle-RCE-Exploit)
 
-Process chạy chương trình dưới quyền root, nên ta chỉ cần chạy được revese shell là sẽ có shell của root
+Process khả năng chạy chương trình dưới quyền root, nên ta chỉ cần chạy được revese shell là sẽ có shell của root
 
 ![image](https://user-images.githubusercontent.com/86275419/224705865-e6797dcd-891a-45f7-b676-d75503355b92.png)
+
+Giờ mình sẽ tải PoC bên trên custom lại chạy xem có được không
+
+![image](https://user-images.githubusercontent.com/86275419/224706904-9f2ca67c-1eaa-4841-834b-602d5aae9632.png)
+
+Custom file PoC
+
+![image](https://user-images.githubusercontent.com/86275419/224709069-4d8205f2-1983-467f-8bd6-4098d6ac1145.png)
+
+Mở port nhận reverse shell
+
+![image](https://user-images.githubusercontent.com/86275419/224709395-edd0bd9c-5777-4401-a8a1-799c8556ebc3.png)
+
+Chạy PoC
+
+![image](https://user-images.githubusercontent.com/86275419/224709461-59a4fd93-20e1-4782-bc3d-06115e36eebd.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224709597-79b43c60-517f-48e2-ae50-7d4317f6a4bc.png)
+
+Bùm, lên root thành công
+
+![image](https://user-images.githubusercontent.com/86275419/224709808-6331fedb-138e-4778-a562-add3ab65d209.png)
+
+
+
 
