@@ -453,11 +453,15 @@ Lên tty:
 
 Những cách thông thường khi vào server thực hiện không thành công thì mình sẽ không đưa vào đây nữa
 
+![image](https://user-images.githubusercontent.com/86275419/224765387-66a8a36f-d81a-4577-b155-8869fc6c4a68.png)
+
 Khi mình exploit đến directory của user `john` thì mình phát hiện ra `.ssh` mình được phép ghi vào do group của thư mục đang là group của mình, nhưng đời không như là mơ, id_rsa không cho ghi vào, nên coi như chả làm được gì với cái này
 
 ![image](https://user-images.githubusercontent.com/86275419/224742128-10dc7527-2a28-474e-937a-04fd9cdd6619.png)
 
 Ta chú ý vào file `toto` 
+
+![image](https://user-images.githubusercontent.com/86275419/224765538-d7aa6fa1-b3bb-44b9-acf5-6b1aa4d7a3cd.png)
  
 Chạy thử ta thấy rằng nó sẽ thực hiện command id, mấy bài kiểu này thì ta chỉ cần thay đổi PATH để khi chạy command id thì nó sẽ tìm tới file thực thi ở thư mục đầu tiên trong biến PATH
 
@@ -487,10 +491,127 @@ Done
 
 ![image](https://user-images.githubusercontent.com/86275419/224746958-9e6dc21a-7ad6-4d36-b47e-cdf7d68e37d2.png)
 
+# 4. DarkHole 2
 
+## Scan
 
+![image](https://user-images.githubusercontent.com/86275419/224766620-c3642f55-c117-4e32-928e-1ceae6bd2650.png)
 
+IP: `192.168.44.118`
 
+![image](https://user-images.githubusercontent.com/86275419/224766974-95e415e8-f819-404f-b932-968ffdb1efa5.png)
+
+Bài này số lượng port mở cũng giống bài bên trên. Ta vẫn sẽ tập trung vào web
+
+## Web exploit
+
+![image](https://user-images.githubusercontent.com/86275419/224775310-bf205d76-43d5-4ea7-924c-be61082fc4c4.png)
+
+Fuzz subdir
+
+![image](https://user-images.githubusercontent.com/86275419/224771644-6da4be53-a259-4c4b-8e66-4e606805be08.png)
+
+Fuzz được một đống file git luôn, trước trên picoCTF hình như cũng có một bài về git, nhưng lâu quá chưa gặp lại nên giờ mình gần như không có hiểu biết gì về git luôn :slightly_frowning_face:, giờ phải đi xem một số bài exploit khi có file git 
+
+Đầu tiên ta get đống file git về bằng `git-dumper`
+
+![image](https://user-images.githubusercontent.com/86275419/224777465-22b481c2-2ee7-4e12-a7db-80c10cda9818.png)
+
+Ta được source code của trang web:
+
+![image](https://user-images.githubusercontent.com/86275419/224777541-1b59bf2f-d59b-47cd-b1cb-5c6f897a9ffd.png)
+
+Sau khi đọc hết đống file này thì mình thấy không có gì đáng chú ý, file dashboard.php để đọc được thì mình cần deobfuscate
+
+![image](https://user-images.githubusercontent.com/86275419/224780780-3a845800-c6b2-439e-a8de-5343dbac1bea.png)
+
+Đang stuck thì mình mới nhớ ra nãy tìm hiểu mấy bài exploit họ có xem được log của git 
+
+![image](https://user-images.githubusercontent.com/86275419/224783255-2e092ba6-b115-43ec-ae27-f9b8d426ea83.png)
+
+Đây rồi, ta sẽ xem có gì hay không
+
+![image](https://user-images.githubusercontent.com/86275419/224783387-cf8e1941-dc54-49aa-b89c-567c70e2cd0d.png)
+
+Ta thu được user và pass của account admin
+
+Thực hiện login vào hệ thống
+
+![image](https://user-images.githubusercontent.com/86275419/224783831-7ddc9de7-7398-4947-9f22-deb2f975b28a.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224783894-9c93b10d-f72d-4caf-8c5a-eb67d11f33c5.png)
+
+Nhìn thấy parameter `id` mình lại nghĩ đến idor, nhưng không lẽ hai bài lại một kịch bản giống nhau?
+
+Sau khi test lại + mình có thể đọc source file dashboard.php thì không phải. Trong file dashboard.php thì duy nhất biến $mobile là không bị filter và ta có thể tấn công SQL Injection
+
+Sau một hồi test các kiểu thì mình biết injection được vào trường id, ảo v~~~~~ , đúng là không tin được bố con thằng nào
+
+![image](https://user-images.githubusercontent.com/86275419/224786558-96425680-3bad-4191-a311-5261b2477928.png)
+
+Đến đây thì ta ném vào sqlmap chạy thôi
+
+Đầu tiên ta sẽ tìm tên database
+
+![image](https://user-images.githubusercontent.com/86275419/224789894-6171316c-3272-437f-9c24-0fe1e9a52ef3.png)
+
+Kết quả:
+
+![image](https://user-images.githubusercontent.com/86275419/224789983-530a27e6-33c6-4176-b39a-35738ac5ebb5.png)
+
+Chắc chắn thứ ta cần nằm ở db darkhole_2
+
+Giờ ta sẽ dump dữ liệu trong database này ra
+
+![image](https://user-images.githubusercontent.com/86275419/224790534-0258aa05-5c0b-4003-83b0-20d06930c859.png)
+
+Kết quả 
+
+![image](https://user-images.githubusercontent.com/86275419/224790625-6c558b95-9729-4b74-9966-3667d2cbb494.png)
+
+Ta dump được username và pass của user `jehad` trong bảng ssh
+
+Giờ thì ta ssh vào thôi
+
+![image](https://user-images.githubusercontent.com/86275419/224791621-91b11a3b-a383-4510-b35c-96b0e3b8998a.png)
+
+## Priv
+
+File crontab
+
+![image](https://user-images.githubusercontent.com/86275419/224793611-2c2a4d7e-df61-4d97-aa12-041b0e7a5eaa.png)
+
+Có một trang php đang chạy dưới quyền user losy ở localhost
+
+Ta xem file code có tại /opt/web có gì đáng chú ý không
+
+![image](https://user-images.githubusercontent.com/86275419/224794077-0acad2cf-389e-401c-b47d-04fd43c3f5e6.png)
+
+Đoạn code này sẽ thực thi command khi người dùng nhập vào. Bây giờ ta chỉ cần truy cập được trang này và tạo reverse shell là sẽ có shell của user `losy`.  Trang này đang chạy ở localhost nên ta đơn giản là curl với parameter `?cmd=reverse shell`
+
+![image](https://user-images.githubusercontent.com/86275419/224796024-bdcb6867-532b-4d6e-8689-fd061f177dbd.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224796114-dfbf74df-9dab-477b-a9d1-4373f4cfe8f8.png)
+
+Chuyển sang user `losy` thành công
+
+![image](https://user-images.githubusercontent.com/86275419/224796401-79367b42-3e3c-40ce-b6ac-9797056776fd.png)
+
+Đọc file `.bash_history` ta sẽ thu được pass của user `losy`
+
+![image](https://user-images.githubusercontent.com/86275419/224797349-e86c3820-d305-4590-b62a-aaa430dfeeb2.png)
+
+Có password rồi thì đầu tiên cứ `sudo -l` thôi
+
+![image](https://user-images.githubusercontent.com/86275419/224797486-5e826da5-ccac-41f2-b884-59d4d62bd033.png)
+
+Cho chạy python dưới quyền root thì easy rồi, bài này còn cho chạy command trực tiếp hoặc làm giống như bài trên là bem được root
+
+![image](https://user-images.githubusercontent.com/86275419/224798026-f62b4551-b684-4155-b387-ef6f826e11df.png)
+
+Done!
+
+![image](https://user-images.githubusercontent.com/86275419/224798157-0f67173c-3935-4f87-bdf2-baa94901a514.png)
 
 
 
