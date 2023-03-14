@@ -866,16 +866,103 @@ Done!
 
 ![image](https://user-images.githubusercontent.com/86275419/224848714-6c2c5607-65d3-4c22-b921-4a9a7a8490c4.png)
 
-# 7. 
+# 7. MATRIX-BREAKOUT: 2 MORPHEUS
 
+## Scan
 
+![image](https://user-images.githubusercontent.com/86275419/224850262-cd8c3b88-def3-4a60-95dc-41c249e7447b.png)
 
+IP: `192.168.44.121`
 
+![image](https://user-images.githubusercontent.com/86275419/224850389-42e744cc-e9fb-43dd-950b-4fbdb35f4a1f.png)
 
+## Exploit web
 
+![image](https://user-images.githubusercontent.com/86275419/224850478-9b5f778c-7b3e-4c6a-ab8c-8078773c0757.png)
 
+Fuzz subdir 
 
+![image](https://user-images.githubusercontent.com/86275419/224850750-691d6be2-affe-4a55-9646-456c2c2d449a.png)
 
+Truy cập robots.txt
+
+![image](https://user-images.githubusercontent.com/86275419/224850819-074c5b42-9240-4421-954b-390bc77ce5f6.png)
+
+Không thu được gì thì mình fuzz tiếp thôi
+
+![image](https://user-images.githubusercontent.com/86275419/224852282-9d08f4de-a51f-4da8-b150-ac71d131c2ab.png)
+
+File `graffiti` có cả định dạng .txt lẫn .php luôn, ta thử truy cập vào xem có gì hay ho không
+
+![image](https://user-images.githubusercontent.com/86275419/224853041-77b7fc1f-e2b9-4f23-82ca-801ea3a3f873.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224852519-12f90495-ecf7-4909-b93c-112a39aff814.png)
+
+Ở đây có một chức năng cho mình nhập message và gửi lên, giờ mình thử sử dụng xem có gì hay ho không
+
+![image](https://user-images.githubusercontent.com/86275419/224852891-bc9236a9-3b57-4a13-8997-b31ed49e9c0e.png)
+
+Sau khi mình nhập `haha` thì nó in luôn trên web cho mình, giờ ta sẽ phân tích request nó gửi đi 
+
+![image](https://user-images.githubusercontent.com/86275419/224853100-37edae36-3440-43ed-9275-47905ed720e7.png)
+
+Ở đây nó gửi đi message + tên file
+
+Đến đây thì hay rồi, mình thử đổi tên file xem sao 
+
+![image](https://user-images.githubusercontent.com/86275419/224853309-3a58375f-6d13-4f8a-8279-9dbaafe6c3d1.png)
+
+Bây giờ mình thử truy cập `hihi.txt`
+
+![image](https://user-images.githubusercontent.com/86275419/224853396-bcdb75e3-71e4-4262-a362-ca52d07f023f.png)
+
+Được luôn
+
+Giờ mình up 1 file php lên xem nó có nhận không, nếu được thì bú luôn
+
+![image](https://user-images.githubusercontent.com/86275419/224853739-10549912-bbca-4ae0-b510-aeb90d50d1ed.png)
+
+Truy cập 
+
+![image](https://user-images.githubusercontent.com/86275419/224853791-dc8e577c-bf99-4f1e-ad02-f0346fcfebcf.png)
+
+Ngon, giờ lấy shell về thôi 
+
+![image](https://user-images.githubusercontent.com/86275419/224854003-3381be6a-ec44-4c37-bef3-24e8acd1673e.png)
+
+![image](https://user-images.githubusercontent.com/86275419/224854029-a4edc7e4-48ec-4c10-b7b6-cf7f45c31107.png)
+
+## Priv
+
+Đọc Flag thì ta nhận được thông điệp sau
+
+![image](https://user-images.githubusercontent.com/86275419/224854349-a45d7b97-c8d3-437f-ab60-dbb8777fb91a.png)
+
+Thông điệp bảo ta tìm password của Cypher và lấy flag tại `/.cypher-neo.png`
+
+Thông điệp mà lại cho ta một cái ảnh thì khả năng là thông điệp giấu sau tấm ảnh, ta sẽ sử dụng tool `steghide` để lấy
+
+![image](https://user-images.githubusercontent.com/86275419/224855683-b6702fd3-bd75-4c8b-83b2-e1e874001408.png)
+
+hmm không có gì cả, để mình tải linpeas chạy xem thu được gì không
+
+![image](https://user-images.githubusercontent.com/86275419/224858681-ab31c7b4-093e-4ed1-923d-4fd8b859aeea.png)
+
+Có password của cypher, giờ crack thử xem sao
+
+Rất tiếc là mình tìm cách crack mà không được
+
+Với bài này mình lại sử dụng bem kernel
+
+![image](https://user-images.githubusercontent.com/86275419/224859784-0b87d35e-1355-4aab-a389-ab14526d0fd3.png)
+
+[PoC](https://github.com/Al1ex/CVE-2022-0847)
+
+![image](https://user-images.githubusercontent.com/86275419/224859743-0de8e3c0-8378-4bc6-b5a3-a637cd99c9c7.png)
+
+Done!
+
+![image](https://user-images.githubusercontent.com/86275419/224859887-50be40d5-5cfb-4a96-94e6-0279b9bd822e.png)
 
 
 
