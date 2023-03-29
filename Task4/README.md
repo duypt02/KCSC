@@ -137,9 +137,111 @@ Result:
 Exploit thành công
 
 
+# AbuseHumanDB
 
+Khi truy cập vào trang web thì ta sẽ được một trang có 2 chức năng chính là `Report Abusive Content By Humans`:
 
+![image](https://user-images.githubusercontent.com/86275419/228646954-ac9e50ba-aede-4b8b-9d83-0a6368ccff46.png)
 
+![image](https://user-images.githubusercontent.com/86275419/228647872-0961a578-ce6a-490a-94ee-a3bc73bea7a9.png)
+
+và `Search Query`:
+
+![image](https://user-images.githubusercontent.com/86275419/228647101-0ad5d0a3-7e09-4bc5-b3ac-005cd67dca21.png)
+
+![image](https://user-images.githubusercontent.com/86275419/228647996-2dfc2a71-20ab-4a45-a71b-2bb9cd1af34f.png)
+
+### Sau khi thử sử dụng trang web xong thì mình đi phân tích source code để tìm lỗ hổng
+
+![image](https://user-images.githubusercontent.com/86275419/228648381-fc1218f9-edb2-4856-9936-b1375e9740b9.png)
+
+Đây là một trang web được code bằng NodeJS, CSDL là sqlite
+
+Đầu tiên khi vào web sẽ tạo database (file database.js):
+
+![image](https://user-images.githubusercontent.com/86275419/228650383-55f6ba09-40fd-42a7-a419-2dfe83696188.png)
+
+Ta thấy rằng Flag sẽ nằm ở database, và khác với các dữ liệu khác, cột `approved` của Flag sẽ là `0`
+
+Ta tiếp tục xem file database:
+
+![image](https://user-images.githubusercontent.com/86275419/228651246-e8a8932e-7838-4486-b49d-0794a25b1f8e.png)
+
+Đây là các hàm để lấy dữ liệu ra trong database, ta thấy rằng tất cả truy vấn đều sử dụng statement nên việc tấn công SQL Injection vào đây là không thể
+
++ Để ý thêm ở các hàm lấy dữ liệu thì tham số (approved) mặc định là 1, mà flag của ta approved=0, có nghĩa là để lấy được flag thì ta cần truyền vào đối số là `0`
+
+Ta sẽ đi tìm xem hàm nào gọi truy vấn CSDL, file routes\index.js:
+
+- Trong file này có 2 hàm gọi truy vấn database:
+
+![image](https://user-images.githubusercontent.com/86275419/228653070-e759ba9f-5cff-498a-90ec-a40768e8dfba.png)
+
+Khi ta truy cập vào trang chủ của web thì hàm trên sẽ được gọi, hàm này khi gọi truy vấn database và truyền vào một đối số là một biến `isLocalhost(req)` (tương ứng là approved) để truy vấn toàn bộ report trong database có `isLocalhost(req)` (ta sẽ phân tích bên dưới) tương ứng là 0 (only flag) hoặc 1 (Tất cả report trừ Flag) 
+
+Khi ta sử dụng chức năng Search Query thì nó sẽ gọi hàm bên dưới:
+
+![image](https://user-images.githubusercontent.com/86275419/228655257-6e4c088e-ab27-4090-86be-7934d9862627.png)
+
++ Hàm này khi truy vấn database sẽ truyền vào 2 tham số là `query` và `isLocalhost(req)`. Biến query sẽ lấy giá trị từ parameter `q` (ta truyền vào) sau đó gán thêm ký tự `%` vào sau giá trị mà ta truyền vào (mục đính để dấu `%` sẽ match với tất cả các ký tự đằng sau giá trị ta truyền vào khi truy vấn db). Dưới đây là request khi ta Search Query:
+
+![image](https://user-images.githubusercontent.com/86275419/228657099-d42dedcc-6a7e-41a6-a87b-9e65e4843a99.png)
+
+=> Ta thấy rằng ở hai hàm trên, điều kiện để ta có thể lấy được Flag là `isLocalhost(req)=0`, sẽ sẽ đi xem biến `isLocalhost(req)`:
+
+![image](https://user-images.githubusercontent.com/86275419/228658448-802d3874-9fa5-4739-8a44-1904052477ec.png)
+
+Ta có thể thấy rằng để `isLocalhost(req)=0` thì request phải được thực hiện từ ip `127.0.0.1:1337`(localhost với port 1337), còn nếu truy vấn từ máy bên ngoài vào thì `isLocalhost(req)=1` -> `approved=1` -> Không lấy được Flag. Và theo tìm hiểu của mình thì việc bypass ở đây là không thực hiện được
+
+=> Vậy bây giờ ta cần phải tìm cách tạo request từ chính localhost của trang web để lấy Flag, đến đây mình nghĩ đến lỗi SSRF
+
+Ta sẽ đi tìm thêm một số thông tin khác trong File code để tìm solution:
+
+Ở trong routes/index.js ta có còn một hàm sau:
+
+![image](https://user-images.githubusercontent.com/86275419/228660952-84fe7078-3e27-4a4a-8321-919c93955dea.png)
+
+Hàm này là hàm xử lý chức năng `Report Abusive Content By Humans` 
++ Hàm này sẽ lấy url mà ta truyền vào, sau đó đưa vào một con bot (hàm visitPage) để truy cập tới url đó. Dưới đây là hàm visitPage()(file bot.js):
+
+![image](https://user-images.githubusercontent.com/86275419/228663923-4a3cc87d-d11c-4377-b8d6-d0bed5a84016.png)
+
+Một đống code JS bên trên mình cũng không hiểu lắm, nhưng sau khi search thì nhìn chung nó sẽ visit tới cái url của mình truyền vào 
+
+Sau một thời gian đọc code thì mình có vector tấn công như sau: đầu tiên mình sẽ gửi url (localhost) tới con bot để nó truy cập vào url đó và vào trang chủ, lúc này `isLocalhost(req)=0` và trả về cho con bot Flag. Nhưng ở vector này mình đang gặp vấn đề là làm sao để lấy Flag từ con bot về mình :v
+
+Sau một hồi suy nghĩ gaf quá không ra được kỹ thuật nào có thể áp dụng vào đây nên đành lên mạng xem sol để tìm hint làm tiếp, và mình tìm được keyword `XS-Leaks`
+
+![image](https://user-images.githubusercontent.com/86275419/228668617-6bda2212-e928-4759-b458-3f8802246936.png)
+
+Reading:
+
+https://cheatsheetseries.owasp.org/cheatsheets/XS_Leaks_Cheat_Sheet.html
+
+https://xsleaks.dev/
+
+https://book.hacktricks.xyz/pentesting-web/xs-search
+
+![image](https://user-images.githubusercontent.com/86275419/228676870-a991ffc7-45d1-4781-b342-0b5ed9cc5b50.png)
+
+Sau khi đọc một số bài viết thì mình hiểu nôm na rằng lỗ hổng này cho phép hacker sử dụng các thông tin được trao đổi giữa các trang web tưởng chừng như các thông tin đó là vô nghĩa, nhưng từ những thông tin đó hacker có thể sử dụng để suy luận ra những thông tin nhạy cảm
+
+Ta sẽ quay lại web để phân tích tiếp code xem chỗ nào có thể áp dụng XS-Leaks
+
+![image](https://user-images.githubusercontent.com/86275419/228677580-654a4e37-f4b0-44b7-8027-010fbc0964c3.png)
+
+Chức năng Search, khi ta truy vấn db mà không có bản ghi nào trả về thì nó sẽ response lỗi 404, còn nếu có sẽ là 200
++ Ở đây ta để ý trường query lúc nãy mình có giải thích ký tự `%`, bây giờ ta sẽ brute-force từng ký tự của Flag, nếu ký tự đó nằm trong Flag sẽ response 200 còn không thì sẽ response status 404 (error)
+
+Lợi dụng điều này, khi ta sử dụng XS-Leaks nó sẽ sử dụng các Error Events (.onerror(), .onload()) để thể hiện cho chúng ta thấy khi nó request tới một url có xảy ra lỗi (404) hay không (200)
+
+Vector: ta sẽ tạo một trang web chứa một đoạn script thực hiện XS-Leaks và có chức năng gửi lại kết quả cho mình -> gửi link chứa trang web này cho con bot -> bot truy cập link -> script thực hiện trên con bot với ip localhost (`isLocalhost(req)=0` -> `approved=0`) -> bot gửi request và brute-force từng ký tự Flag tại chức năng `Search Query` -> Sau khi brute-force xong, bot gửi lại flag cho mình
+
+Script (by skelter)
+
+```
+
+```
 
 
 
