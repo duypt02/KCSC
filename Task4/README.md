@@ -274,9 +274,9 @@ getFlag(chars);
 
 Mọi người cần built một web để máy bên HTB có thể truy cập vào được, ở đây mình dùng apache + ngrok
 + Apache là web server 
-+ Ngrok để minh tạo một IP public link với web của mình 
++ Ngrok để mình tạo một IP public link với web của mình 
 
-![image](https://user-images.githubusercontent.com/86275419/228779801-e6197a50-99f0-43f3-8ad6-5ff31e8ec3ec.png)
+![image](https://user-images.githubusercontent.com/86275419/228799910-40ff186c-ce18-483b-bb69-5dada805528f.png)
 
 Thực hiện gửi link web của mình vào chức năng `Report Abusive Content By Humans` 
 
