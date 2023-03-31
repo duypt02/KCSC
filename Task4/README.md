@@ -286,3 +286,42 @@ Giờ ta chỉ ngồi đợi Flag về thôi
 
 ![image](https://user-images.githubusercontent.com/86275419/228799148-9edfc8d8-c336-4df0-953e-c01879bfa4f4.png)
 
+# Breaking Grad
+
+Bài lab cho ta một trang web check điểm của Kenny Baker và Jack Purvis xem có pass hay không
+
+![image](https://user-images.githubusercontent.com/86275419/229105788-f7d16a6b-1ef8-4519-8d95-1211fc403ae7.png)
+
+Thử check thì hai ông đều tạch, và không có chức năng gì khác :v  
+
+Mình bắt request thì khi check điểm web sẽ gửi đi một object có key là "name" và value là tên của người được check điểm 
+
+![image](https://user-images.githubusercontent.com/86275419/229107847-7fffd467-65de-4041-908c-6d8c87230576.png)
+
+Giờ ta sẽ đi xem source code để tìm vuln của bài này
+
+![image](https://user-images.githubusercontent.com/86275419/229112155-90a149cc-5203-4405-bd81-33e871c589ff.png)
+
+Web này được code bằng NodeJS và flag nằm ở web root, giống như bài 1 thì khả năng cao bài này phải RCE để đọc Flag
+
+- File routes/index.js
+
+![image](https://user-images.githubusercontent.com/86275419/229109188-158093e1-098a-43c7-b869-4cd3e615edaf.png)
+
++ Đây là file định tuyến cho cả trang web, ở đây ta thấy có 3 luồng chính, luồng đầu tiên là khi ta truy cập vào trang chủ, luồng thứ 2 là khi ta truy cập vào "/debug/:action", và cuối cùng là luồng xử lý khi ta check điểm "/api/calculate"
+
++ Mình sẽ đi vào chức năng check điểm của chương trình vì đây là chức năng chính và có khả năng có lỗ hổng nhất
+
+![image](https://user-images.githubusercontent.com/86275419/229110279-3d53f0b2-e95f-46f5-b848-f25825746753.png)
+
+Ở đây đầu tiên nó sẽ tạo ra một biến student được gán giá trị từ `ObjectHelper.clone(req.body)`, ta sẽ phân tích sang hàm này 
+
+![image](https://user-images.githubusercontent.com/86275419/229111357-49c798b2-c9dd-4c87-9e13-fb58807d314f.png)
+
+Hàm này có chức năng clone object, nếu object chứa key là `__proto__` thì sẽ trả về một object rỗng `{}`. Nếu mọi người đã từng tìm hiểu qua lỗ hổng `Prototype pollution` thì có thể đoán được rằng khả năng cao ở bài này đang bị lỗ hổng này và có thể RCE, thậm chí đoạn code này giống y như trên [Hacktricks](https://book.hacktricks.xyz/pentesting-web/deserialization/nodejs-proto-prototype-pollution/prototype-pollution-to-rce), nhưng ở bài này có thêm hàm filter nếu ta sử dụng `__proto__` và không có hàm để tạo `child_process`. Giờ ta sẽ đi phân tích tiếp code
+
+![image](https://user-images.githubusercontent.com/86275419/229116555-39be01a1-5566-43d2-857c-ca82a4486a2c.png)
+
+Đoạn code trên có chức năng kiểm tra điểm của người đó xem có đỗ hay là không, nếu không đỗ thì sẽ trả vể kết quả gồm `n` + 10 ký tự `oO` random + `pe`, nếu đỗ sẽ trả về `Passed`. Nhìn chung ở đây không có lỗ hổng
+
+
